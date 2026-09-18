@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { TrashSimple, TShirt, Pants, Dress, Sneaker, Handbag, Sparkle, CoatHanger, PencilSimple, Spinner, ArrowSquareOut } from '@phosphor-icons/react';
+import { TrashSimple, TShirt, Pants, Dress, Sneaker, Handbag, Sparkle, CoatHanger, PencilSimple, Spinner, ArrowSquareOut, ArrowClockwise } from '@phosphor-icons/react';
 
 export interface Item {
   id: number;
@@ -28,6 +28,7 @@ interface Props {
   onSelect?: () => void;
   onDelete?: () => void;
   onEdit?: () => void;
+  onRefresh?: () => void;
 }
 
 const TYPE_ICONS: Record<string, React.ElementType> = {
@@ -50,7 +51,7 @@ function Placeholder({ type }: { type: string }) {
   );
 }
 
-export default function ItemCard({ item, enriching, selectable, selected, onSelect, onDelete, onEdit }: Props) {
+export default function ItemCard({ item, enriching, selectable, selected, onSelect, onDelete, onEdit, onRefresh }: Props) {
   const [imgError, setImgError] = useState(false);
   const [productImgError, setProductImgError] = useState(false);
 
@@ -102,6 +103,17 @@ export default function ItemCard({ item, enriching, selectable, selected, onSele
         )}
 
         <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {onRefresh && !enriching && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onRefresh(); }}
+              className="p-1.5 rounded-sm"
+              style={{ background: 'rgba(255,255,255,0.9)' }}
+              aria-label="Search for product image"
+              title="Find product image"
+            >
+              <ArrowClockwise size={13} weight="duotone" color="#2D5016" />
+            </button>
+          )}
           {onEdit && (
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(); }}

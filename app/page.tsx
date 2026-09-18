@@ -109,7 +109,7 @@ export default function ClosetPage() {
     if (refFileRef.current) refFileRef.current.value = '';
   }
 
-  async function enrichItem(id: number, onDone: () => void) {
+  async function enrichItem(id: number, onDone?: () => void) {
     setEnrichingIds(prev => new Set(prev).add(id));
     try {
       const res = await fetch(`/api/items/${id}/enrich`, { method: 'POST' });
@@ -117,7 +117,7 @@ export default function ClosetPage() {
       setItems(prev => prev.map(i => i.id === id ? updated : i));
     } finally {
       setEnrichingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
-      onDone();
+      onDone?.();
     }
   }
 
@@ -328,6 +328,7 @@ export default function ClosetPage() {
                 enriching={enrichingIds.has(item.id)}
                 onDelete={() => handleDelete(item.id)}
                 onEdit={() => setEditingItem(item)}
+                onRefresh={() => enrichItem(item.id)}
               />
             </div>
           ))}
