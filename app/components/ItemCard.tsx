@@ -34,6 +34,8 @@ interface Props {
 
 const TYPE_ICONS: Record<string, React.ElementType> = {
   top: TShirt,
+  shirt: TShirt,
+  sweater: CoatHanger,
   bottom: Pants,
   dress: Dress,
   jumpsuit: Dress,

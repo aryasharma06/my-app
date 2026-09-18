@@ -8,7 +8,7 @@ import LibraryBrowser from './components/LibraryBrowser';
 import EditItemModal from './components/EditItemModal';
 import ManualAddModal from './components/ManualAddModal';
 
-const TYPE_FILTERS = ['All', 'Favorites', 'top', 'bottom', 'dress', 'shoes', 'bag', 'outerwear'];
+const TYPE_FILTERS = ['All', 'Favorites', 'shirt', 'sweater', 'bottom', 'dress', 'shoes', 'bag', 'outerwear'];
 
 interface UploadState {
   phase: 'idle' | 'analyzing' | 'found' | 'enriching' | 'done';

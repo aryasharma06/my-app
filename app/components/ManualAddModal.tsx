@@ -10,7 +10,7 @@ interface Props {
   onAdd: (item: Item) => void;
 }
 
-const TYPE_OPTIONS = ['top', 'bottom', 'dress', 'shoes', 'bag', 'accessory', 'outerwear', 'jumpsuit'];
+const TYPE_OPTIONS = ['shirt', 'sweater', 'bottom', 'dress', 'shoes', 'bag', 'accessory', 'outerwear', 'jumpsuit'];
 const SEASON_OPTIONS = ['spring', 'summer', 'autumn', 'winter', 'all-season'];
 const OCCASION_OPTIONS = ['casual', 'office', 'smart casual', 'evening', 'formal', 'weekend', 'brunch', 'party', 'travel', 'beach', 'sport'];
 const labelStyle = { fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#6B8F5E', marginBottom: 4 };
