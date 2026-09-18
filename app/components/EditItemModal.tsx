@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { X, FloppyDisk, Spinner } from '@phosphor-icons/react';
+import { useRef, useState } from 'react';
+import { X, FloppyDisk, Spinner, UploadSimple } from '@phosphor-icons/react';
 
 interface Item {
   id: number;
@@ -40,13 +40,40 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
     occasion: item.occasion ?? '',
     ranking: item.ranking ?? 3,
     notes: item.notes ?? '',
-    product_image_url: item.product_image_url ?? '',
     product_url: item.product_url ?? '',
   });
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(item.product_image_url);
+  const [imageUrl, setImageUrl] = useState('');
+  const imgFileRef = useRef<HTMLInputElement>(null);
 
   function set(field: string, value: string | number) {
     setForm(f => ({ ...f, [field]: value }));
+  }
+
+  async function uploadImage(file: File) {
+    setUploadingImage(true);
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch(`/api/items/${item.id}/image`, { method: 'POST', body: form });
+    const updated = await res.json();
+    setPreviewImage(updated.product_image_url);
+    setUploadingImage(false);
+    onSave(updated); // propagate immediately so grid updates
+  }
+
+  async function applyImageUrl() {
+    if (!imageUrl.trim()) return;
+    setUploadingImage(true);
+    const form = new FormData();
+    form.append('url', imageUrl.trim());
+    const res = await fetch(`/api/items/${item.id}/image`, { method: 'POST', body: form });
+    const updated = await res.json();
+    setPreviewImage(updated.product_image_url);
+    setImageUrl('');
+    setUploadingImage(false);
+    onSave(updated);
   }
 
   async function save() {
@@ -58,7 +85,6 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
         ...form,
         price_estimate: form.price_estimate === '' ? null : Number(form.price_estimate),
         ranking: Number(form.ranking),
-        product_image_url: form.product_image_url || null,
         product_url: form.product_url || null,
       }),
     });
@@ -66,6 +92,8 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
     setSaving(false);
     onSave(updated);
   }
+
+  const displayImage = previewImage ?? item.image_path;
 
   return (
     <div
@@ -82,6 +110,69 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
         </div>
 
         <div className="px-6 py-5 flex flex-col gap-4">
+
+          {/* Product image override */}
+          <div>
+            <p style={labelStyle}>Product image</p>
+            <div className="flex gap-3 items-start">
+              {/* Preview */}
+              <div
+                className="flex-shrink-0 rounded overflow-hidden relative"
+                style={{ width: 80, height: 80, background: '#EFF3EC', border: '0.5px solid #D4DDD0' }}
+              >
+                {uploadingImage ? (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Spinner size={18} weight="bold" color="#2D5016" className="animate-spin" />
+                  </div>
+                ) : displayImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={displayImage} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                ) : null}
+              </div>
+
+              <div className="flex-1 flex flex-col gap-2">
+                {/* Upload file */}
+                <input
+                  ref={imgFileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f); }}
+                />
+                <button
+                  onClick={() => imgFileRef.current?.click()}
+                  disabled={uploadingImage}
+                  className="flex items-center gap-2 px-3 py-2 rounded-sm text-xs font-medium tracking-widest uppercase"
+                  style={{ background: '#EFF3EC', color: '#2D5016', border: '0.5px solid #D4DDD0', opacity: uploadingImage ? 0.5 : 1 }}
+                >
+                  <UploadSimple size={13} weight="duotone" />
+                  Upload image
+                </button>
+
+                {/* Paste URL */}
+                <div className="flex gap-2">
+                  <input
+                    style={{ ...inputStyle, flex: 1, fontSize: 12 }}
+                    placeholder="Or paste image URL..."
+                    value={imageUrl}
+                    onChange={e => setImageUrl(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && applyImageUrl()}
+                  />
+                  <button
+                    onClick={applyImageUrl}
+                    disabled={!imageUrl.trim() || uploadingImage}
+                    className="px-3 py-1 rounded-sm text-xs font-medium tracking-widest uppercase"
+                    style={{ background: '#2D5016', color: '#F9F9F7', opacity: (!imageUrl.trim() || uploadingImage) ? 0.4 : 1, whiteSpace: 'nowrap' }}
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ borderTop: '0.5px solid #D4DDD0' }} />
+
           <div>
             <p style={labelStyle}>Name</p>
             <input style={inputStyle} value={form.name} onChange={e => set('name', e.target.value)} />
@@ -147,18 +238,9 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
             <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: 64 }} value={form.notes} onChange={e => set('notes', e.target.value)} />
           </div>
 
-          <div style={{ borderTop: '0.5px solid #D4DDD0', paddingTop: 16 }}>
-            <p style={{ ...labelStyle, marginBottom: 12 }}>Product data (from web search)</p>
-            <div className="flex flex-col gap-3">
-              <div>
-                <p style={labelStyle}>Product image URL</p>
-                <input style={inputStyle} value={form.product_image_url} onChange={e => set('product_image_url', e.target.value)} placeholder="https://..." />
-              </div>
-              <div>
-                <p style={labelStyle}>Product page URL</p>
-                <input style={inputStyle} value={form.product_url} onChange={e => set('product_url', e.target.value)} placeholder="https://..." />
-              </div>
-            </div>
+          <div>
+            <p style={labelStyle}>Product page URL</p>
+            <input style={inputStyle} value={form.product_url} onChange={e => set('product_url', e.target.value)} placeholder="https://..." />
           </div>
         </div>
 
