@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Camera, Spinner, FunnelSimple, Images, UserCircle, CheckCircle, ListBullets, ArrowClockwise, PencilSimple } from '@phosphor-icons/react';
+import { Camera, Spinner, FunnelSimple, Images, UserCircle, CheckCircle, ListBullets, ArrowClockwise, PencilSimple, PlusCircle } from '@phosphor-icons/react';
 import Image from 'next/image';
 import ItemCard, { Item } from './components/ItemCard';
 import LibraryBrowser from './components/LibraryBrowser';
 import EditItemModal from './components/EditItemModal';
+import ManualAddModal from './components/ManualAddModal';
 
 const TYPE_FILTERS = ['All', 'Favorites', 'top', 'bottom', 'dress', 'shoes', 'bag', 'outerwear'];
 
@@ -81,6 +82,7 @@ export default function ClosetPage() {
   const [filter, setFilter] = useState('All');
   const [uploadState, setUploadState] = useState<UploadState>(IDLE);
   const [showLibrary, setShowLibrary] = useState(false);
+  const [showManualAdd, setShowManualAdd] = useState(false);
   const [refPhoto, setRefPhoto] = useState<string | null>(null);
   const [enrichingIds, setEnrichingIds] = useState<Set<number>>(new Set());
   const [editingItem, setEditingItem] = useState<Item | null>(null);
@@ -119,6 +121,19 @@ export default function ClosetPage() {
     } finally {
       setEnrichingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
       onDone?.();
+    }
+  }
+
+  async function analyzeItem(id: number) {
+    setEnrichingIds(prev => new Set(prev).add(id));
+    try {
+      const res = await fetch(`/api/items/${id}/analyze`, { method: 'POST' });
+      if (res.ok) {
+        const updated = await res.json();
+        setItems(prev => prev.map(i => i.id === id ? updated : i));
+      }
+    } finally {
+      setEnrichingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
     }
   }
 
@@ -242,6 +257,14 @@ export default function ClosetPage() {
     setEditingItem(null);
   }
 
+  function handleManualAdd(newItem: Item) {
+    setItems(prev => [newItem, ...prev]);
+    setShowManualAdd(false);
+    if (newItem.product_image_url) {
+      analyzeItem(newItem.id);
+    }
+  }
+
   const matched = items.filter(i => i.product_image_url);
   const unmatched = items.filter(i => !i.product_image_url && !enrichingIds.has(i.id));
   const filtered = filter === 'All' ? matched
@@ -262,6 +285,12 @@ export default function ClosetPage() {
           item={editingItem}
           onClose={() => setEditingItem(null)}
           onSave={handleSaveEdit}
+        />
+      )}
+      {showManualAdd && (
+        <ManualAddModal
+          onClose={() => setShowManualAdd(false)}
+          onAdd={handleManualAdd}
         />
       )}
 
@@ -291,6 +320,14 @@ export default function ClosetPage() {
               <UserCircle size={14} weight="duotone" />
             )}
             {refPhoto ? 'Your photo' : 'Set your photo'}
+          </button>
+          <button
+            onClick={() => setShowManualAdd(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-sm text-xs font-medium tracking-widest uppercase"
+            style={{ background: '#EFF3EC', color: '#2D5016', border: '0.5px solid #D4DDD0' }}
+          >
+            <PlusCircle size={14} weight="duotone" />
+            Add manually
           </button>
           <button
             onClick={() => setShowLibrary(true)}
