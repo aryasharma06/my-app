@@ -43,54 +43,50 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
     product_url: item.product_url ?? '',
   });
   const [saving, setSaving] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(item.product_image_url);
-  const [imageUrl, setImageUrl] = useState('');
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
+  const [pendingImageUrl, setPendingImageUrl] = useState('');
   const imgFileRef = useRef<HTMLInputElement>(null);
 
   function set(field: string, value: string | number) {
     setForm(f => ({ ...f, [field]: value }));
   }
 
-  async function uploadImage(file: File) {
-    setUploadingImage(true);
-    const form = new FormData();
-    form.append('file', file);
-    const res = await fetch(`/api/items/${item.id}/image`, { method: 'POST', body: form });
-    const updated = await res.json();
-    setPreviewImage(updated.product_image_url);
-    setUploadingImage(false);
-    onSave(updated); // propagate immediately so grid updates
-  }
-
-  async function applyImageUrl() {
-    if (!imageUrl.trim()) return;
-    setUploadingImage(true);
-    const form = new FormData();
-    form.append('url', imageUrl.trim());
-    const res = await fetch(`/api/items/${item.id}/image`, { method: 'POST', body: form });
-    const updated = await res.json();
-    setPreviewImage(updated.product_image_url);
-    setImageUrl('');
-    setUploadingImage(false);
-    onSave(updated);
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPendingImageFile(file);
+    setPendingImageUrl('');
+    setPreviewImage(URL.createObjectURL(file));
   }
 
   async function save() {
     setSaving(true);
-    const res = await fetch(`/api/items/${item.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...form,
-        price_estimate: form.price_estimate === '' ? null : Number(form.price_estimate),
-        ranking: Number(form.ranking),
-        product_url: form.product_url || null,
-      }),
-    });
-    const updated = await res.json();
-    setSaving(false);
-    onSave(updated);
+    try {
+      // If a new image was selected, upload it first
+      if (pendingImageFile || pendingImageUrl.trim()) {
+        const imgForm = new FormData();
+        if (pendingImageFile) imgForm.append('file', pendingImageFile);
+        else imgForm.append('url', pendingImageUrl.trim());
+        await fetch(`/api/items/${item.id}/image`, { method: 'POST', body: imgForm });
+      }
+
+      // Save all other fields
+      const res = await fetch(`/api/items/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...form,
+          price_estimate: form.price_estimate === '' ? null : Number(form.price_estimate),
+          ranking: Number(form.ranking),
+          product_url: form.product_url || null,
+        }),
+      });
+      const updated = await res.json();
+      onSave(updated);
+    } finally {
+      setSaving(false);
+    }
   }
 
   const displayImage = previewImage ?? item.image_path;
@@ -102,71 +98,57 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="w-full max-w-lg rounded overflow-hidden" style={{ background: '#F9F9F7', border: '0.5px solid #D4DDD0', maxHeight: '90vh', overflowY: 'auto' }}>
+
+        {/* Header with Save */}
         <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '0.5px solid #D4DDD0' }}>
           <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 20, color: '#1A2E1A' }}>Edit item</span>
-          <button onClick={onClose} style={{ color: '#6B8F5E' }}>
-            <X size={18} weight="bold" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={save}
+              disabled={saving}
+              className="flex items-center gap-2 px-4 py-2 rounded-sm text-xs font-medium tracking-widest uppercase"
+              style={{ background: '#2D5016', color: '#F9F9F7', opacity: saving ? 0.6 : 1 }}
+            >
+              {saving ? <Spinner size={12} weight="bold" className="animate-spin" /> : <FloppyDisk size={12} weight="duotone" />}
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+            <button onClick={onClose} className="p-1" style={{ color: '#6B8F5E' }}>
+              <X size={18} weight="bold" />
+            </button>
+          </div>
         </div>
 
         <div className="px-6 py-5 flex flex-col gap-4">
 
-          {/* Product image override */}
+          {/* Product image */}
           <div>
             <p style={labelStyle}>Product image</p>
             <div className="flex gap-3 items-start">
-              {/* Preview */}
-              <div
-                className="flex-shrink-0 rounded overflow-hidden relative"
-                style={{ width: 80, height: 80, background: '#EFF3EC', border: '0.5px solid #D4DDD0' }}
-              >
-                {uploadingImage ? (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Spinner size={18} weight="bold" color="#2D5016" className="animate-spin" />
-                  </div>
-                ) : displayImage ? (
+              <div className="flex-shrink-0 rounded overflow-hidden" style={{ width: 72, height: 72, background: '#EFF3EC', border: '0.5px solid #D4DDD0' }}>
+                {displayImage && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={displayImage} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                ) : null}
+                )}
               </div>
-
               <div className="flex-1 flex flex-col gap-2">
-                {/* Upload file */}
-                <input
-                  ref={imgFileRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f); }}
-                />
+                <input ref={imgFileRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
                 <button
                   onClick={() => imgFileRef.current?.click()}
-                  disabled={uploadingImage}
                   className="flex items-center gap-2 px-3 py-2 rounded-sm text-xs font-medium tracking-widest uppercase"
-                  style={{ background: '#EFF3EC', color: '#2D5016', border: '0.5px solid #D4DDD0', opacity: uploadingImage ? 0.5 : 1 }}
+                  style={{ background: '#EFF3EC', color: '#2D5016', border: '0.5px solid #D4DDD0' }}
                 >
                   <UploadSimple size={13} weight="duotone" />
                   Upload image
                 </button>
-
-                {/* Paste URL */}
-                <div className="flex gap-2">
-                  <input
-                    style={{ ...inputStyle, flex: 1, fontSize: 12 }}
-                    placeholder="Or paste image URL..."
-                    value={imageUrl}
-                    onChange={e => setImageUrl(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && applyImageUrl()}
-                  />
-                  <button
-                    onClick={applyImageUrl}
-                    disabled={!imageUrl.trim() || uploadingImage}
-                    className="px-3 py-1 rounded-sm text-xs font-medium tracking-widest uppercase"
-                    style={{ background: '#2D5016', color: '#F9F9F7', opacity: (!imageUrl.trim() || uploadingImage) ? 0.4 : 1, whiteSpace: 'nowrap' }}
-                  >
-                    Apply
-                  </button>
-                </div>
+                <input
+                  style={{ ...inputStyle, fontSize: 12 }}
+                  placeholder="Or paste image URL..."
+                  value={pendingImageUrl}
+                  onChange={e => { setPendingImageUrl(e.target.value); setPendingImageFile(null); if (e.target.value) setPreviewImage(e.target.value); }}
+                />
+                {(pendingImageFile || pendingImageUrl) && (
+                  <p style={{ fontSize: 11, color: '#6B8F5E' }}>Image will be saved when you click Save.</p>
+                )}
               </div>
             </div>
           </div>
@@ -220,12 +202,7 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
                 <button
                   key={n}
                   onClick={() => set('ranking', n)}
-                  style={{
-                    width: 36, height: 36, borderRadius: 2, border: '0.5px solid #D4DDD0',
-                    background: form.ranking >= n ? '#2D5016' : '#EFF3EC',
-                    color: form.ranking >= n ? '#F9F9F7' : '#6B8F5E',
-                    fontSize: 14,
-                  }}
+                  style={{ width: 36, height: 36, borderRadius: 2, border: '0.5px solid #D4DDD0', background: form.ranking >= n ? '#2D5016' : '#EFF3EC', color: form.ranking >= n ? '#F9F9F7' : '#6B8F5E', fontSize: 14 }}
                 >
                   {n}
                 </button>
@@ -235,32 +212,13 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
 
           <div>
             <p style={labelStyle}>Notes</p>
-            <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: 64 }} value={form.notes} onChange={e => set('notes', e.target.value)} />
+            <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: 60 }} value={form.notes} onChange={e => set('notes', e.target.value)} />
           </div>
 
           <div>
             <p style={labelStyle}>Product page URL</p>
             <input style={inputStyle} value={form.product_url} onChange={e => set('product_url', e.target.value)} placeholder="https://..." />
           </div>
-        </div>
-
-        <div className="px-6 py-4 flex justify-end gap-3" style={{ borderTop: '0.5px solid #D4DDD0' }}>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-sm text-xs font-medium tracking-widest uppercase"
-            style={{ background: '#EFF3EC', color: '#2D5016' }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={save}
-            disabled={saving}
-            className="flex items-center gap-2 px-5 py-2 rounded-sm text-xs font-medium tracking-widest uppercase"
-            style={{ background: '#2D5016', color: '#F9F9F7', opacity: saving ? 0.6 : 1 }}
-          >
-            {saving ? <Spinner size={13} weight="bold" className="animate-spin" /> : <FloppyDisk size={13} weight="duotone" />}
-            {saving ? 'Saving...' : 'Save'}
-          </button>
         </div>
       </div>
     </div>

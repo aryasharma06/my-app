@@ -157,14 +157,16 @@ export default function ItemCard({ item, enriching, selectable, selected, onSele
         )}
       </div>
 
-      <div className="p-3 flex flex-col gap-1.5">
-        <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 16, color: '#1A2E1A', fontWeight: 400 }}>{item.name}</p>
-        <p style={{ fontSize: 11, color: '#6B8F5E' }}>
-          {item.brand !== 'Unknown' ? item.brand : ''}{item.brand !== 'Unknown' && item.price_estimate ? ' · ' : ''}
-          {item.price_estimate ? `Est. $${Math.round(item.price_estimate)}` : ''}
-        </p>
+      <div className="p-3 flex flex-col justify-between" style={{ height: 96 }}>
+        <div>
+          <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 15, color: '#1A2E1A', fontWeight: 400, lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.name}</p>
+          <p style={{ fontSize: 11, color: '#6B8F5E', marginTop: 2 }}>
+            {item.brand !== 'Unknown' ? item.brand : ''}{item.brand !== 'Unknown' && item.price_estimate ? ' · ' : ''}
+            {item.price_estimate ? `Est. $${Math.round(item.price_estimate)}` : ''}
+          </p>
+        </div>
         <div className="flex items-center justify-between">
-          <div className="flex gap-1 flex-wrap">
+          <div className="flex gap-1">
             {firstSeason && (
               <span style={{ background: '#EFF3EC', color: '#2D5016', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '2px 8px', borderRadius: 2 }}>
                 {firstSeason}
@@ -176,7 +178,7 @@ export default function ItemCard({ item, enriching, selectable, selected, onSele
               </span>
             )}
           </div>
-          <span style={{ color: '#C4735A', fontSize: 11, letterSpacing: 1 }}>{stars}</span>
+          <span style={{ color: '#C4735A', fontSize: 11, letterSpacing: 1, flexShrink: 0 }}>{stars}</span>
         </div>
       </div>
     </div>

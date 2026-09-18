@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Camera, Spinner, FunnelSimple, Images, UserCircle, CheckCircle } from '@phosphor-icons/react';
+import { Camera, Spinner, FunnelSimple, Images, UserCircle, CheckCircle, ListBullets, ArrowClockwise, PencilSimple } from '@phosphor-icons/react';
 import Image from 'next/image';
 import ItemCard, { Item } from './components/ItemCard';
 import LibraryBrowser from './components/LibraryBrowser';
@@ -84,6 +84,7 @@ export default function ClosetPage() {
   const [refPhoto, setRefPhoto] = useState<string | null>(null);
   const [enrichingIds, setEnrichingIds] = useState<Set<number>>(new Set());
   const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [showLog, setShowLog] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const refFileRef = useRef<HTMLInputElement>(null);
 
@@ -229,7 +230,9 @@ export default function ClosetPage() {
     setEditingItem(null);
   }
 
-  const filtered = filter === 'All' ? items : items.filter((i) => i.type === filter);
+  const matched = items.filter(i => i.product_image_url);
+  const unmatched = items.filter(i => !i.product_image_url && !enrichingIds.has(i.id));
+  const filtered = filter === 'All' ? matched : matched.filter(i => i.type === filter);
   const isUploading = uploadState.phase !== 'idle';
 
   return (
@@ -312,7 +315,7 @@ export default function ClosetPage() {
         ))}
       </div>
 
-      {filtered.length === 0 ? (
+      {filtered.length === 0 && unmatched.length === 0 && enrichingIds.size === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 gap-4">
           <Camera size={48} weight="duotone" color="#D4DDD0" />
           <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 22, color: '#6B8F5E', fontWeight: 300 }}>
@@ -332,6 +335,68 @@ export default function ClosetPage() {
               />
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Unmatched items log */}
+      {unmatched.length > 0 && (
+        <div className="mt-10">
+          <button
+            onClick={() => setShowLog(s => !s)}
+            className="flex items-center gap-2 mb-3"
+          >
+            <ListBullets size={14} weight="duotone" color="#6B8F5E" />
+            <span style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6B8F5E' }}>
+              {unmatched.length} item{unmatched.length !== 1 ? 's' : ''} without a product image
+            </span>
+            <span style={{ fontSize: 11, color: '#D4DDD0' }}>{showLog ? '▲' : '▼'}</span>
+          </button>
+
+          {showLog && (
+            <div className="rounded-sm overflow-hidden" style={{ border: '0.5px solid #D4DDD0' }}>
+              {unmatched.map((item, i) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between px-4 py-3"
+                  style={{ borderTop: i === 0 ? 'none' : '0.5px solid #D4DDD0', background: '#fff' }}
+                >
+                  <div className="flex items-center gap-3">
+                    <span style={{ background: '#EFF3EC', color: '#2D5016', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '2px 8px', borderRadius: 2 }}>
+                      {item.type}
+                    </span>
+                    <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 15, color: '#1A2E1A' }}>{item.name}</span>
+                    {item.color && <span style={{ fontSize: 11, color: '#6B8F5E' }}>{item.color}</span>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => enrichItem(item.id)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-medium tracking-widest uppercase"
+                      style={{ background: '#EFF3EC', color: '#2D5016' }}
+                      title="Search again"
+                    >
+                      <ArrowClockwise size={12} weight="duotone" />
+                      Retry
+                    </button>
+                    <button
+                      onClick={() => setEditingItem(item)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-medium tracking-widest uppercase"
+                      style={{ background: '#EFF3EC', color: '#2D5016' }}
+                      title="Set image manually"
+                    >
+                      <PencilSimple size={12} weight="duotone" />
+                      Set image
+                    </button>
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      style={{ fontSize: 11, color: '#C4735A', padding: '4px 6px' }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
