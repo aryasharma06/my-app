@@ -76,7 +76,8 @@ Return ONLY valid JSON array, no other text. Example: [{"name":"...","type":"top
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) throw new Error('No JSON array in Claude response');
 
-    const analyses: Record<string, unknown>[] = JSON.parse(jsonMatch[0]);
+    const all: Record<string, unknown>[] = JSON.parse(jsonMatch[0]);
+    const analyses = all.filter((a) => a.type !== 'accessory');
     if (!Array.isArray(analyses) || analyses.length === 0) throw new Error('Empty analysis');
 
     const items = analyses.map((analysis) => {
