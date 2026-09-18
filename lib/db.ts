@@ -57,6 +57,7 @@ function migrateSchema(db: Database.Database) {
   const cols = (db.prepare("PRAGMA table_info(items)").all() as { name: string }[]).map(c => c.name);
   if (!cols.includes('product_image_url')) db.exec('ALTER TABLE items ADD COLUMN product_image_url TEXT');
   if (!cols.includes('product_url')) db.exec('ALTER TABLE items ADD COLUMN product_url TEXT');
+  if (!cols.includes('is_favorite')) db.exec('ALTER TABLE items ADD COLUMN is_favorite INTEGER DEFAULT 0');
 }
 
 export default getDb;

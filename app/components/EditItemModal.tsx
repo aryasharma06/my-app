@@ -3,21 +3,7 @@
 import { useRef, useState } from 'react';
 import { X, FloppyDisk, Spinner, UploadSimple } from '@phosphor-icons/react';
 
-interface Item {
-  id: number;
-  image_path: string;
-  product_image_url: string | null;
-  product_url: string | null;
-  name: string;
-  type: string;
-  color: string;
-  brand: string;
-  price_estimate: number;
-  season: string;
-  occasion: string;
-  ranking: number;
-  notes: string;
-}
+import type { Item } from './ItemCard';
 
 interface Props {
   item: Item;
@@ -38,7 +24,6 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
     price_estimate: item.price_estimate != null ? String(item.price_estimate) : '',
     season: item.season ?? '',
     occasion: item.occasion ?? '',
-    ranking: item.ranking ?? 3,
     notes: item.notes ?? '',
     product_url: item.product_url ?? '',
   });
@@ -78,7 +63,6 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
         body: JSON.stringify({
           ...form,
           price_estimate: form.price_estimate === '' ? null : Number(form.price_estimate),
-          ranking: Number(form.ranking),
           product_url: form.product_url || null,
         }),
       });
@@ -192,21 +176,6 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
             <div>
               <p style={labelStyle}>Occasion</p>
               <input style={inputStyle} value={form.occasion} onChange={e => set('occasion', e.target.value)} placeholder="e.g. casual, office" />
-            </div>
-          </div>
-
-          <div>
-            <p style={labelStyle}>Ranking (1-5)</p>
-            <div className="flex gap-2">
-              {[1,2,3,4,5].map(n => (
-                <button
-                  key={n}
-                  onClick={() => set('ranking', n)}
-                  style={{ width: 36, height: 36, borderRadius: 2, border: '0.5px solid #D4DDD0', background: form.ranking >= n ? '#2D5016' : '#EFF3EC', color: form.ranking >= n ? '#F9F9F7' : '#6B8F5E', fontSize: 14 }}
-                >
-                  {n}
-                </button>
-              ))}
             </div>
           </div>
 

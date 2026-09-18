@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { TrashSimple, TShirt, Pants, Dress, Sneaker, Handbag, Sparkle, CoatHanger, PencilSimple, Spinner, ArrowSquareOut, ArrowClockwise } from '@phosphor-icons/react';
+import { TrashSimple, TShirt, Pants, Dress, Sneaker, Handbag, Sparkle, CoatHanger, PencilSimple, Spinner, ArrowSquareOut, ArrowClockwise, Star } from '@phosphor-icons/react';
 
 export interface Item {
   id: number;
   image_path: string;
   product_image_url: string | null;
   product_url: string | null;
+  is_favorite: number;
   name: string;
   type: string;
   color: string;
@@ -16,7 +17,6 @@ export interface Item {
   price_estimate: number;
   season: string;
   occasion: string;
-  ranking: number;
   notes: string;
 }
 
@@ -29,6 +29,7 @@ interface Props {
   onDelete?: () => void;
   onEdit?: () => void;
   onRefresh?: () => void;
+  onToggleFavorite?: () => void;
 }
 
 const TYPE_ICONS: Record<string, React.ElementType> = {
@@ -42,6 +43,19 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
   outerwear: CoatHanger,
 };
 
+const BADGE: React.CSSProperties = {
+  fontSize: 10,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+  padding: '3px 0',
+  borderRadius: 2,
+  width: 72,
+  textAlign: 'center',
+  display: 'inline-block',
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+};
+
 function Placeholder({ type }: { type: string }) {
   const Icon = TYPE_ICONS[type] ?? CoatHanger;
   return (
@@ -51,11 +65,10 @@ function Placeholder({ type }: { type: string }) {
   );
 }
 
-export default function ItemCard({ item, enriching, selectable, selected, onSelect, onDelete, onEdit, onRefresh }: Props) {
+export default function ItemCard({ item, enriching, selectable, selected, onSelect, onDelete, onEdit, onRefresh, onToggleFavorite }: Props) {
   const [imgError, setImgError] = useState(false);
   const [productImgError, setProductImgError] = useState(false);
 
-  const stars = Array.from({ length: 5 }, (_, i) => i < item.ranking ? '★' : '☆').join('');
   const firstOccasion = item.occasion?.split(',')[0]?.trim();
   const firstSeason = item.season?.split(',')[0]?.trim();
 
@@ -101,6 +114,23 @@ export default function ItemCard({ item, enriching, selectable, selected, onSele
           </div>
         )}
 
+        {/* Star button — always visible, top-left */}
+        {onToggleFavorite && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
+            className="absolute top-2 left-2 p-1.5 rounded-sm"
+            style={{ background: 'rgba(255,255,255,0.85)' }}
+            aria-label={item.is_favorite ? 'Unfavorite' : 'Favorite'}
+          >
+            <Star
+              size={14}
+              weight={item.is_favorite ? 'fill' : 'regular'}
+              color={item.is_favorite ? '#C4735A' : '#D4DDD0'}
+            />
+          </button>
+        )}
+
+        {/* Action buttons — top-right, visible on hover */}
         <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           {onRefresh && !enriching && (
             <button
@@ -165,20 +195,13 @@ export default function ItemCard({ item, enriching, selectable, selected, onSele
             {item.price_estimate ? `Est. $${Math.round(item.price_estimate)}` : ''}
           </p>
         </div>
-        <div className="flex items-center justify-between">
-          <div className="flex gap-1">
-            {firstSeason && (
-              <span style={{ background: '#EFF3EC', color: '#2D5016', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '2px 8px', borderRadius: 2 }}>
-                {firstSeason}
-              </span>
-            )}
-            {firstOccasion && (
-              <span style={{ background: '#FAE8E2', color: '#C4735A', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '2px 8px', borderRadius: 2 }}>
-                {firstOccasion}
-              </span>
-            )}
-          </div>
-          <span style={{ color: '#C4735A', fontSize: 11, letterSpacing: 1, flexShrink: 0 }}>{stars}</span>
+        <div className="flex gap-1">
+          {firstSeason && (
+            <span style={{ ...BADGE, background: '#EFF3EC', color: '#2D5016' }}>{firstSeason}</span>
+          )}
+          {firstOccasion && (
+            <span style={{ ...BADGE, background: '#FAE8E2', color: '#C4735A' }}>{firstOccasion}</span>
+          )}
         </div>
       </div>
     </div>

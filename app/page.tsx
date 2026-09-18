@@ -7,7 +7,7 @@ import ItemCard, { Item } from './components/ItemCard';
 import LibraryBrowser from './components/LibraryBrowser';
 import EditItemModal from './components/EditItemModal';
 
-const TYPE_FILTERS = ['All', 'top', 'bottom', 'dress', 'shoes', 'bag', 'accessory', 'outerwear', 'jumpsuit'];
+const TYPE_FILTERS = ['All', 'Favorites', 'top', 'bottom', 'dress', 'shoes', 'bag', 'outerwear'];
 
 interface UploadState {
   phase: 'idle' | 'analyzing' | 'found' | 'enriching' | 'done';
@@ -220,6 +220,18 @@ export default function ClosetPage() {
     setTimeout(() => setUploadState(IDLE), 3000);
   }
 
+  async function handleToggleFavorite(id: number) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    const newVal = item.is_favorite ? 0 : 1;
+    setItems(prev => prev.map(i => i.id === id ? { ...i, is_favorite: newVal } : i));
+    await fetch(`/api/items/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_favorite: newVal }),
+    });
+  }
+
   async function handleDelete(id: number) {
     await fetch(`/api/items/${id}`, { method: 'DELETE' });
     setItems(prev => prev.filter(i => i.id !== id));
@@ -232,7 +244,9 @@ export default function ClosetPage() {
 
   const matched = items.filter(i => i.product_image_url);
   const unmatched = items.filter(i => !i.product_image_url && !enrichingIds.has(i.id));
-  const filtered = filter === 'All' ? matched : matched.filter(i => i.type === filter);
+  const filtered = filter === 'All' ? matched
+    : filter === 'Favorites' ? matched.filter(i => i.is_favorite)
+    : matched.filter(i => i.type === filter);
   const isUploading = uploadState.phase !== 'idle';
 
   return (
@@ -332,6 +346,7 @@ export default function ClosetPage() {
                 onDelete={() => handleDelete(item.id)}
                 onEdit={() => setEditingItem(item)}
                 onRefresh={() => enrichItem(item.id)}
+                onToggleFavorite={() => handleToggleFavorite(item.id)}
               />
             </div>
           ))}
