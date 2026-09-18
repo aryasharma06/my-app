@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Camera, Spinner, FunnelSimple, Images, UserCircle, CheckCircle, ListBullets, ArrowClockwise, PencilSimple, PlusCircle } from '@phosphor-icons/react';
+import { Camera, Spinner, FunnelSimple, Images, UserCircle, CheckCircle, ListBullets, ArrowClockwise, PencilSimple, PlusCircle, MagnifyingGlass, X } from '@phosphor-icons/react';
 import Image from 'next/image';
 import ItemCard, { Item } from './components/ItemCard';
 import LibraryBrowser from './components/LibraryBrowser';
@@ -87,6 +87,7 @@ export default function ClosetPage() {
   const [enrichingIds, setEnrichingIds] = useState<Set<number>>(new Set());
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [showLog, setShowLog] = useState(false);
+  const [search, setSearch] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   const refFileRef = useRef<HTMLInputElement>(null);
 
@@ -267,9 +268,16 @@ export default function ClosetPage() {
 
   const matched = items.filter(i => i.product_image_url);
   const unmatched = items.filter(i => !i.product_image_url && !enrichingIds.has(i.id));
-  const filtered = filter === 'All' ? matched
-    : filter === 'Favorites' ? matched.filter(i => i.is_favorite)
-    : matched.filter(i => i.type === filter);
+  const searchLower = search.toLowerCase().trim();
+  const searchMatched = searchLower
+    ? matched.filter(i =>
+        [i.name, i.brand, i.color, i.season, i.occasion, i.notes, i.type]
+          .some(f => f?.toLowerCase().includes(searchLower))
+      )
+    : matched;
+  const filtered = filter === 'All' ? searchMatched
+    : filter === 'Favorites' ? searchMatched.filter(i => i.is_favorite)
+    : searchMatched.filter(i => i.type === filter);
   const isUploading = uploadState.phase !== 'idle';
 
   return (
@@ -352,6 +360,24 @@ export default function ClosetPage() {
 
       <ProgressBar state={uploadState} />
 
+      <div className="flex items-center gap-2 mb-4" style={{ maxWidth: 360 }}>
+        <div className="flex items-center gap-2 px-3 py-2 rounded-sm flex-1" style={{ background: '#fff', border: '0.5px solid #D4DDD0' }}>
+          <MagnifyingGlass size={14} weight="duotone" color="#6B8F5E" />
+          <input
+            type="text"
+            placeholder="Search by name, brand, color, occasion..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: '#1A2E1A' }}
+          />
+          {search && (
+            <button onClick={() => setSearch('')} style={{ color: '#D4DDD0', lineHeight: 1 }}>
+              <X size={13} weight="bold" />
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="flex items-center gap-2 mb-6 flex-wrap">
         <FunnelSimple size={14} weight="duotone" color="#6B8F5E" />
         {TYPE_FILTERS.map((t) => (
@@ -370,7 +396,7 @@ export default function ClosetPage() {
         <div className="flex flex-col items-center justify-center py-24 gap-4">
           <Camera size={48} weight="duotone" color="#D4DDD0" />
           <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 22, color: '#6B8F5E', fontWeight: 300 }}>
-            {items.length === 0 ? 'Upload your first piece to get started' : 'No items in this category'}
+            {items.length === 0 ? 'Upload your first piece to get started' : search ? `No items match "${search}"` : 'No items in this category'}
           </p>
         </div>
       ) : (
