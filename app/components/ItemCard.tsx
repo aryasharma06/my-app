@@ -85,9 +85,10 @@ export default function ItemCard({ item, enriching, selectable, selected, onSele
         background: '#fff',
         border: selected ? '2px solid #2D5016' : '0.5px solid #D4DDD0',
         cursor: selectable ? 'pointer' : 'default',
+        aspectRatio: '3/5',
       }}
     >
-      <div className="relative" style={{ aspectRatio: '3/4', background: '#EFF3EC' }}>
+      <div className="relative" style={{ flex: 1, minHeight: 0, background: '#EFF3EC' }}>
         {hasProductImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -189,7 +190,7 @@ export default function ItemCard({ item, enriching, selectable, selected, onSele
         )}
       </div>
 
-      <div className="p-3 flex flex-col justify-between" style={{ height: 96 }}>
+      <div className="p-3 flex flex-col justify-between" style={{ height: 96, flexShrink: 0 }}>
         <div>
           <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 15, color: '#1A2E1A', fontWeight: 400, lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.name}</p>
           <p style={{ fontSize: 11, color: '#6B8F5E', marginTop: 2 }}>
