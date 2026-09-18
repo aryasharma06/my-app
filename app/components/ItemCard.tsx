@@ -193,7 +193,6 @@ export default function ItemCard({ item, enriching, selectable, selected, onSele
           <p style={{ fontSize: 11, color: '#6B8F5E', marginTop: 2 }}>
             {[
               item.brand && item.brand !== 'Unknown' ? item.brand : null,
-              item.color ? item.color.split(',')[0].trim() : null,
               item.price_estimate ? `Est. $${Math.round(item.price_estimate)}` : null,
             ].filter(Boolean).join(' · ')}
           </p>

@@ -12,7 +12,7 @@ interface Props {
 
 const TYPE_OPTIONS = ['top', 'bottom', 'dress', 'shoes', 'bag', 'accessory', 'outerwear', 'jumpsuit'];
 const SEASON_OPTIONS = ['spring', 'summer', 'autumn', 'winter', 'all-season'];
-const OCCASION_OPTIONS = ['casual', 'office', 'smart casual', 'evening', 'formal', 'weekend', 'dinner', 'brunch', 'date', 'party', 'elevated', 'travel', 'beach', 'sport', 'gym'];
+const OCCASION_OPTIONS = ['casual', 'office', 'smart casual', 'evening', 'formal', 'weekend', 'brunch', 'party', 'travel', 'beach', 'sport'];
 const labelStyle = { fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#6B8F5E', marginBottom: 4 };
 const inputStyle = { width: '100%', padding: '8px 12px', borderRadius: 2, border: '0.5px solid #D4DDD0', background: '#F9F9F7', color: '#1A2E1A', fontSize: 13, outline: 'none' };
 
