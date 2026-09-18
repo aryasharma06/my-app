@@ -74,13 +74,12 @@ export default function ItemCard({ item, enriching, selectable, selected, onSele
     >
       <div className="relative" style={{ aspectRatio: '3/4', background: '#EFF3EC' }}>
         {hasProductImage ? (
-          <Image
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
             src={item.product_image_url!}
             alt={item.name}
-            fill
-            style={{ objectFit: 'cover' }}
-            sizes="(max-width: 768px) 50vw, 25vw"
             onError={() => setProductImgError(true)}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           />
         ) : hasOriginalImage ? (
           <Image
