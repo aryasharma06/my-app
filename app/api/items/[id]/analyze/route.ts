@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { readFile } from 'fs/promises';
 import path from 'path';
-import { Vibrant } from 'node-vibrant/node';
+import sharp from 'sharp';
 import getDb from '@/lib/db';
 
 interface DbItem {
   id: number;
   color: string;
-  season: string;
-  occasion: string;
   product_image_url: string | null;
 }
 
-// Fashion-relevant color names with representative RGB values
 const FASHION_COLORS: Record<string, [number, number, number]> = {
   'Black':       [15,  15,  15],
   'White':       [245, 245, 245],
@@ -45,21 +43,51 @@ const FASHION_COLORS: Record<string, [number, number, number]> = {
   'Gold':        [215, 175, 50],
 };
 
-function nearestColorName(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-
+function nearestColorName(r: number, g: number, b: number): string {
   let best = 'Unknown';
   let minDist = Infinity;
-
   for (const [name, [cr, cg, cb]] of Object.entries(FASHION_COLORS)) {
-    // Weighted distance — human vision is most sensitive to green, least to blue
-    const dist = Math.sqrt(2 * (r - cr) ** 2 + 4 * (g - cg) ** 2 + 3 * (b - cb) ** 2);
+    const dist = 2 * (r - cr) ** 2 + 4 * (g - cg) ** 2 + 3 * (b - cb) ** 2;
     if (dist < minDist) { minDist = dist; best = name; }
   }
-
   return best;
+}
+
+async function extractColors(imageUrl: string): Promise<string> {
+  let inputBuffer: Buffer;
+
+  if (imageUrl.startsWith('/uploads/')) {
+    inputBuffer = await readFile(path.join(process.cwd(), 'public', imageUrl));
+  } else {
+    const res = await fetch(imageUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    inputBuffer = Buffer.from(await res.arrayBuffer());
+  }
+
+  // Resize to 50x50 and get raw RGB pixels — sharp handles AVIF, WebP, HEIF, JPEG, PNG, etc.
+  const { data } = await sharp(inputBuffer)
+    .resize(50, 50, { fit: 'cover' })
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  // Count pixels per named color
+  const counts: Record<string, number> = {};
+  for (let i = 0; i < data.length; i += 3) {
+    const name = nearestColorName(data[i], data[i + 1], data[i + 2]);
+    counts[name] = (counts[name] ?? 0) + 1;
+  }
+
+  // Top 2 colors by pixel frequency, deduplicated
+  const topColors = Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([name]) => name);
+
+  return topColors.join(', ');
 }
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -67,32 +95,12 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   const db = getDb();
   const item = db.prepare('SELECT * FROM items WHERE id = ?').get(id) as DbItem | undefined;
   if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (!item.product_image_url) return NextResponse.json({ error: 'No image to analyze' }, { status: 400 });
-
-  if (item.color?.trim()) {
-    return NextResponse.json(db.prepare('SELECT * FROM items WHERE id = ?').get(id));
-  }
+  if (!item.product_image_url) return NextResponse.json({ error: 'No image' }, { status: 400 });
+  if (item.color?.trim()) return NextResponse.json(db.prepare('SELECT * FROM items WHERE id = ?').get(id));
 
   try {
-    const imageSrc = item.product_image_url.startsWith('/uploads/')
-      ? path.join(process.cwd(), 'public', item.product_image_url)
-      : item.product_image_url;
-
-    const palette = await Vibrant.from(imageSrc).getPalette();
-
-    // Rank swatches by how many pixels they represent
-    const swatches = Object.values(palette)
-      .filter(Boolean)
-      .sort((a, b) => (b!.population ?? 0) - (a!.population ?? 0));
-
-    const colorNames = swatches
-      .map(s => nearestColorName(s!.hex))
-      .filter((name, i, arr) => arr.indexOf(name) === i) // deduplicate
-      .slice(0, 2);
-
-    if (colorNames.length > 0) {
-      db.prepare('UPDATE items SET color = ? WHERE id = ?').run(colorNames.join(', '), id);
-    }
+    const color = await extractColors(item.product_image_url);
+    if (color) db.prepare('UPDATE items SET color = ? WHERE id = ?').run(color, id);
   } catch (err) {
     console.error('[analyze] color extraction failed:', err);
   }

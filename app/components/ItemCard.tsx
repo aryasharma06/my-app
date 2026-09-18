@@ -191,8 +191,11 @@ export default function ItemCard({ item, enriching, selectable, selected, onSele
         <div>
           <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 15, color: '#1A2E1A', fontWeight: 400, lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.name}</p>
           <p style={{ fontSize: 11, color: '#6B8F5E', marginTop: 2 }}>
-            {item.brand !== 'Unknown' ? item.brand : ''}{item.brand !== 'Unknown' && item.price_estimate ? ' · ' : ''}
-            {item.price_estimate ? `Est. $${Math.round(item.price_estimate)}` : ''}
+            {[
+              item.brand && item.brand !== 'Unknown' ? item.brand : null,
+              item.color ? item.color.split(',')[0].trim() : null,
+              item.price_estimate ? `Est. $${Math.round(item.price_estimate)}` : null,
+            ].filter(Boolean).join(' · ')}
           </p>
         </div>
         <div className="flex gap-1">
