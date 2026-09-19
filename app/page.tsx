@@ -293,6 +293,7 @@ export default function ClosetPage() {
           item={editingItem}
           onClose={() => setEditingItem(null)}
           onSave={handleSaveEdit}
+          onItemUpdate={(updated) => setItems(prev => prev.map(i => i.id === updated.id ? updated : i))}
         />
       )}
       {showManualAdd && (

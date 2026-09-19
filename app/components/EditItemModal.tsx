@@ -10,6 +10,7 @@ interface Props {
   item: Item;
   onClose: () => void;
   onSave: (updated: Item) => void;
+  onItemUpdate?: (updated: Item) => void;
 }
 
 const TYPE_OPTIONS = ['shirt', 'sweater', 'top', 'bottom', 'dress', 'shoes', 'bag', 'accessory', 'outerwear', 'jumpsuit'];
@@ -18,7 +19,7 @@ const OCCASION_OPTIONS = ['casual', 'office', 'smart casual', 'evening', 'formal
 const labelStyle = { fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#6B8F5E', marginBottom: 4 };
 const inputStyle = { width: '100%', padding: '8px 12px', borderRadius: 2, border: '0.5px solid #D4DDD0', background: '#F9F9F7', color: '#1A2E1A', fontSize: 13, outline: 'none' };
 
-export default function EditItemModal({ item, onClose, onSave }: Props) {
+export default function EditItemModal({ item, onClose, onSave, onItemUpdate }: Props) {
   const [form, setForm] = useState({
     name: item.name ?? '',
     type: item.type ?? 'top',
@@ -59,7 +60,7 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
         const updated = await res.json();
         setPrevImageUrl(beforeUrl);
         setPreviewImage(updated.product_image_url);
-        onSave(updated);
+        onItemUpdate?.(updated);
       }
     } finally {
       setRemovingBg(false);
@@ -76,7 +77,7 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
       const updated = await res.json();
       setPreviewImage(prevImageUrl);
       setPrevImageUrl(null);
-      onSave(updated);
+      onItemUpdate?.(updated);
     }
   }
 
