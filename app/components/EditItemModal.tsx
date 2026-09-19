@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { X, FloppyDisk, Spinner, UploadSimple, Eraser } from '@phosphor-icons/react';
+import { X, FloppyDisk, Spinner, UploadSimple, Eraser, ArrowCounterClockwise } from '@phosphor-icons/react';
 
 import type { Item } from './ItemCard';
 import CheckboxGroup from './CheckboxGroup';
@@ -33,6 +33,7 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
   const [saving, setSaving] = useState(false);
   const [removingBg, setRemovingBg] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(item.product_image_url);
+  const [prevImageUrl, setPrevImageUrl] = useState<string | null>(null);
   const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
   const [pendingImageUrl, setPendingImageUrl] = useState('');
   const imgFileRef = useRef<HTMLInputElement>(null);
@@ -51,15 +52,31 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
 
   async function removeBackground() {
     setRemovingBg(true);
+    const beforeUrl = previewImage;
     try {
       const res = await fetch(`/api/items/${item.id}/remove-bg`, { method: 'POST' });
       if (res.ok) {
         const updated = await res.json();
+        setPrevImageUrl(beforeUrl);
         setPreviewImage(updated.product_image_url);
         onSave(updated);
       }
     } finally {
       setRemovingBg(false);
+    }
+  }
+
+  async function undoRemoveBackground() {
+    const res = await fetch(`/api/items/${item.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product_image_url: prevImageUrl }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setPreviewImage(prevImageUrl);
+      setPrevImageUrl(null);
+      onSave(updated);
     }
   }
 
@@ -151,6 +168,17 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
                   >
                     {removingBg ? <Spinner size={13} weight="bold" className="animate-spin" /> : <Eraser size={13} weight="duotone" />}
                     {removingBg ? 'Removing...' : 'Remove background'}
+                  </button>
+                )}
+                {prevImageUrl !== null && (
+                  <button
+                    onClick={undoRemoveBackground}
+                    disabled={removingBg || saving}
+                    className="flex items-center gap-2 px-3 py-2 rounded-sm text-xs font-medium tracking-widest uppercase"
+                    style={{ background: '#FAE8E2', color: '#C4735A', border: '0.5px solid #F0C4B8' }}
+                  >
+                    <ArrowCounterClockwise size={13} weight="duotone" />
+                    Undo
                   </button>
                 )}
                 <input
