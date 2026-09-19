@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.126.0",
+    "@imgly/background-removal-node": "^1.4.5",
     "@phosphor-icons/react": "^2.1.10",
     "better-sqlite3": "^13.0.3",
     "next": "16.3.5",
@@ -29,6 +30,8 @@
     "typescript": "^5"
   },
   "allowScripts": {
-    "better-sqlite3@13.0.3": true
+    "better-sqlite3@13.0.3": true,
+    "onnxruntime-node@1.17.3": true,
+    "unrs-resolver@1.12.2": true
   }
 }

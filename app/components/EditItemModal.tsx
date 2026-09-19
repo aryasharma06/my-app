@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { X, FloppyDisk, Spinner, UploadSimple } from '@phosphor-icons/react';
+import { X, FloppyDisk, Spinner, UploadSimple, Eraser } from '@phosphor-icons/react';
 
 import type { Item } from './ItemCard';
 import CheckboxGroup from './CheckboxGroup';
@@ -31,6 +31,7 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
     product_url: item.product_url ?? '',
   });
   const [saving, setSaving] = useState(false);
+  const [removingBg, setRemovingBg] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(item.product_image_url);
   const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
   const [pendingImageUrl, setPendingImageUrl] = useState('');
@@ -46,6 +47,20 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
     setPendingImageFile(file);
     setPendingImageUrl('');
     setPreviewImage(URL.createObjectURL(file));
+  }
+
+  async function removeBackground() {
+    setRemovingBg(true);
+    try {
+      const res = await fetch(`/api/items/${item.id}/remove-bg`, { method: 'POST' });
+      if (res.ok) {
+        const updated = await res.json();
+        setPreviewImage(updated.product_image_url);
+        onSave(updated);
+      }
+    } finally {
+      setRemovingBg(false);
+    }
   }
 
   async function save() {
@@ -127,6 +142,17 @@ export default function EditItemModal({ item, onClose, onSave }: Props) {
                   <UploadSimple size={13} weight="duotone" />
                   Upload image
                 </button>
+                {(item.product_image_url || item.image_path) && (
+                  <button
+                    onClick={removeBackground}
+                    disabled={removingBg || saving}
+                    className="flex items-center gap-2 px-3 py-2 rounded-sm text-xs font-medium tracking-widest uppercase"
+                    style={{ background: '#EFF3EC', color: '#2D5016', border: '0.5px solid #D4DDD0', opacity: removingBg ? 0.6 : 1 }}
+                  >
+                    {removingBg ? <Spinner size={13} weight="bold" className="animate-spin" /> : <Eraser size={13} weight="duotone" />}
+                    {removingBg ? 'Removing...' : 'Remove background'}
+                  </button>
+                )}
                 <input
                   style={{ ...inputStyle, fontSize: 12 }}
                   placeholder="Or paste image URL..."
