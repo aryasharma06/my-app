@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
+import sharp from 'sharp';
 import getDb from '@/lib/db';
 
 interface DbItem {
@@ -33,10 +34,12 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     inputBuffer = Buffer.from(await res.arrayBuffer());
   }
 
-  // Dynamic import to avoid edge runtime issues
+  // Detect format and convert to PNG so the library gets a known MIME type
+  const pngBuffer = await sharp(inputBuffer).png().toBuffer();
+
   const { removeBackground } = await import('@imgly/background-removal-node');
 
-  const blob = new Blob([inputBuffer]);
+  const blob = new Blob([pngBuffer], { type: 'image/png' });
   const resultBlob = await removeBackground(blob);
   const resultBuffer = Buffer.from(await resultBlob.arrayBuffer());
 
