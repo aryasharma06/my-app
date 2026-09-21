@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ChartPie, Tag, Sun, Briefcase, X } from '@phosphor-icons/react';
+import { ChartPie, Tag, Sun, Briefcase, X, Palette } from '@phosphor-icons/react';
 import Image from 'next/image';
 import { Item } from '../components/ItemCard';
 
@@ -16,7 +16,7 @@ interface Analytics {
   byOccasion: Record<string, number>;
 }
 
-type FilterKey = 'type' | 'brand' | 'season' | 'occasion';
+type FilterKey = 'type' | 'brand' | 'season' | 'occasion' | 'color';
 
 interface DrillDownConfig {
   title: string;
@@ -25,21 +25,25 @@ interface DrillDownConfig {
   filterKey: FilterKey;
 }
 
-function Bar({ label, count, max, color }: { label: string; count: number; max: number; color: string }) {
+function Bar({ label, count, max, color, swatch }: { label: string; count: number; max: number; color: string; swatch?: string }) {
   const pct = max ? Math.round((count / max) * 100) : 0;
+  const barColor = swatch ?? color;
   return (
-    <div className="flex items-center gap-3">
-      <span style={{ fontSize: 12, color: '#6B8F5E', minWidth: 90, textTransform: 'capitalize' }}>{label}</span>
+    <div className="flex items-center gap-2.5">
+      {swatch && (
+        <div className="flex-shrink-0 rounded-full" style={{ width: 10, height: 10, background: swatch, border: '0.5px solid rgba(0,0,0,0.12)' }} />
+      )}
+      <span style={{ fontSize: 12, color: '#6B8F5E', minWidth: 80, textTransform: 'capitalize' }}>{label}</span>
       <div className="flex-1 h-1.5 rounded-full" style={{ background: '#EFF3EC' }}>
-        <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+        <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, background: barColor }} />
       </div>
       <span style={{ fontSize: 12, color: '#1A2E1A', minWidth: 24, textAlign: 'right' }}>{count}</span>
     </div>
   );
 }
 
-function Section({ icon, title, data, color, onClick }: {
-  icon: React.ReactNode; title: string; data: Record<string, number>; color: string; onClick: () => void;
+function Section({ icon, title, data, color, useSwatches, onClick }: {
+  icon: React.ReactNode; title: string; data: Record<string, number>; color: string; useSwatches?: boolean; onClick: () => void;
 }) {
   const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]).slice(0, 6);
   const max = sorted[0]?.[1] ?? 1;
@@ -59,7 +63,7 @@ function Section({ icon, title, data, color, onClick }: {
         <span style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#D4DDD0' }}>View all</span>
       </div>
       <div className="flex flex-col gap-2.5">
-        {sorted.map(([k, v]) => <Bar key={k} label={k} count={v} max={max} color={color} />)}
+        {sorted.map(([k, v]) => <Bar key={k} label={k} count={v} max={max} color={color} swatch={useSwatches ? k : undefined} />)}
       </div>
     </button>
   );
@@ -122,13 +126,18 @@ function DrillDownModal({ config, items, onClose }: { config: DrillDownConfig; i
                   }}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span style={{ fontSize: 12, color: isSelected ? '#1A2E1A' : '#6B8F5E', textTransform: 'capitalize', fontWeight: isSelected ? 500 : 400 }}>
-                      {k}
-                    </span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      {config.filterKey === 'color' && (
+                        <div className="flex-shrink-0 rounded-full" style={{ width: 10, height: 10, background: k, border: '0.5px solid rgba(0,0,0,0.12)' }} />
+                      )}
+                      <span style={{ fontSize: 12, color: isSelected ? '#1A2E1A' : '#6B8F5E', textTransform: 'capitalize', fontWeight: isSelected ? 500 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {k}
+                      </span>
+                    </div>
                     <span style={{ fontSize: 11, color: config.accentColor, flexShrink: 0 }}>{v}</span>
                   </div>
-                  <div className="h-1 rounded-full w-full" style={{ background: '#D4DDD0' }}>
-                    <div className="h-1 rounded-full transition-all" style={{ width: `${pct}%`, background: isSelected ? config.accentColor : '#D4DDD0' }} />
+                  <div className="h-1 rounded-full w-full" style={{ background: '#EFF3EC' }}>
+                    <div className="h-1 rounded-full transition-all" style={{ width: `${pct}%`, background: config.filterKey === 'color' ? k : (isSelected ? config.accentColor : '#D4DDD0') }} />
                   </div>
                 </button>
               );
@@ -208,11 +217,12 @@ export default function AnalyticsPage() {
     </div>
   );
 
-  const sections: (DrillDownConfig & { icon: React.ReactNode })[] = [
+  const sections: (DrillDownConfig & { icon: React.ReactNode; useSwatches?: boolean })[] = [
     { title: 'By type', accentColor: '#2D5016', data: data.byType, filterKey: 'type', icon: <ChartPie size={16} weight="duotone" color="#6B8F5E" /> },
     { title: 'By season', accentColor: '#4A7A28', data: data.bySeason, filterKey: 'season', icon: <Sun size={16} weight="duotone" color="#6B8F5E" /> },
     { title: 'By occasion', accentColor: '#C4735A', data: data.byOccasion, filterKey: 'occasion', icon: <Briefcase size={16} weight="duotone" color="#6B8F5E" /> },
     { title: 'By brand', accentColor: '#6B8F5E', data: data.byBrand, filterKey: 'brand', icon: <Tag size={16} weight="duotone" color="#6B8F5E" /> },
+    { title: 'By color', accentColor: '#6B8F5E', data: data.byColor, filterKey: 'color', useSwatches: true, icon: <Palette size={16} weight="duotone" color="#6B8F5E" /> },
   ];
 
   return (
@@ -245,13 +255,14 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
-        {sections.map(({ icon, title, accentColor, data: sectionData, filterKey }) => (
+        {sections.map(({ icon, title, accentColor, data: sectionData, filterKey, useSwatches }) => (
           <Section
             key={title}
             icon={icon}
             title={title}
             data={sectionData}
             color={accentColor}
+            useSwatches={useSwatches}
             onClick={() => setDrillDown({ title, accentColor, data: sectionData, filterKey })}
           />
         ))}
