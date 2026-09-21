@@ -7,8 +7,9 @@ import ItemCard, { Item } from './components/ItemCard';
 import LibraryBrowser from './components/LibraryBrowser';
 import EditItemModal from './components/EditItemModal';
 import ManualAddModal from './components/ManualAddModal';
+import ItemDetailModal from './components/ItemDetailModal';
 
-const TYPE_FILTERS = ['All', 'Favorites', 'shirt', 'sweater', 'bottom', 'dress', 'shoes', 'bag', 'outerwear'];
+const TYPE_FILTERS = ['All', 'Favorites', 'shirt', 'sweater', 'bottom', 'dress', 'shoes', 'bag', 'outerwear', 'accessory', 'jumpsuit'];
 
 interface UploadState {
   phase: 'idle' | 'analyzing' | 'found' | 'enriching' | 'done';
@@ -86,6 +87,7 @@ export default function ClosetPage() {
   const [refPhoto, setRefPhoto] = useState<string | null>(null);
   const [enrichingIds, setEnrichingIds] = useState<Set<number>>(new Set());
   const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [viewingItem, setViewingItem] = useState<Item | null>(null);
   const [showLog, setShowLog] = useState(false);
   const [search, setSearch] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
@@ -302,6 +304,17 @@ export default function ClosetPage() {
           onAdd={handleManualAdd}
         />
       )}
+      {viewingItem && (
+        <ItemDetailModal
+          item={viewingItem}
+          onClose={() => setViewingItem(null)}
+          onEdit={() => { setViewingItem(null); setEditingItem(viewingItem); }}
+          onToggleFavorite={() => {
+            handleToggleFavorite(viewingItem.id);
+            setViewingItem(prev => prev ? { ...prev, is_favorite: prev.is_favorite ? 0 : 1 } : null);
+          }}
+        />
+      )}
 
       <div className="flex items-end justify-between mb-8">
         <div>
@@ -407,6 +420,7 @@ export default function ClosetPage() {
               <ItemCard
                 item={item}
                 enriching={enrichingIds.has(item.id)}
+                onClick={() => setViewingItem(item)}
                 onDelete={() => handleDelete(item.id)}
                 onEdit={() => setEditingItem(item)}
                 onRefresh={() => enrichItem(item.id)}

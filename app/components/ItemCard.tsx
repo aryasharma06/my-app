@@ -26,6 +26,7 @@ interface Props {
   selectable?: boolean;
   selected?: boolean;
   onSelect?: () => void;
+  onClick?: () => void;
   onDelete?: () => void;
   onEdit?: () => void;
   onRefresh?: () => void;
@@ -67,7 +68,7 @@ function Placeholder({ type }: { type: string }) {
   );
 }
 
-export default function ItemCard({ item, enriching, selectable, selected, onSelect, onDelete, onEdit, onRefresh, onToggleFavorite }: Props) {
+export default function ItemCard({ item, enriching, selectable, selected, onSelect, onClick, onDelete, onEdit, onRefresh, onToggleFavorite }: Props) {
   const [imgError, setImgError] = useState(false);
   const [productImgError, setProductImgError] = useState(false);
 
@@ -79,12 +80,12 @@ export default function ItemCard({ item, enriching, selectable, selected, onSele
 
   return (
     <div
-      onClick={selectable ? onSelect : undefined}
+      onClick={selectable ? onSelect : onClick}
       className="rounded overflow-hidden flex flex-col transition-all"
       style={{
         background: '#fff',
         border: selected ? '2px solid #2D5016' : '0.5px solid #D4DDD0',
-        cursor: selectable ? 'pointer' : 'default',
+        cursor: selectable ? 'pointer' : onClick ? 'pointer' : 'default',
         aspectRatio: '3/5',
       }}
     >
