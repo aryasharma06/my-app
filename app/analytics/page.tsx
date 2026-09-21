@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ChartPie, Tag, Sun, Briefcase, CurrencyDollar, Star } from '@phosphor-icons/react';
+import { ChartPie, Tag, Sun, Briefcase } from '@phosphor-icons/react';
 
 
 interface Analytics {
@@ -68,8 +68,6 @@ export default function AnalyticsPage() {
 
   const stats = [
     { label: 'Total pieces', value: data.count, icon: <ChartPie size={18} weight="duotone" color="#2D5016" /> },
-    { label: 'Estimated value', value: `$${Math.round(data.totalValue).toLocaleString()}`, icon: <CurrencyDollar size={18} weight="duotone" color="#2D5016" /> },
-    { label: 'Average rating', value: `${data.avgRanking.toFixed(1)} / 5`, icon: <Star size={18} weight="duotone" color="#2D5016" /> },
   ];
 
   return (
@@ -83,7 +81,7 @@ export default function AnalyticsPage() {
         </h1>
       </div>
 
-      <div className="grid gap-4 mb-8" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+      <div className="grid gap-4 mb-8" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
         {stats.map(({ label, value, icon }) => (
           <div key={label} className="rounded p-5" style={{ background: '#fff', border: '0.5px solid #D4DDD0' }}>
             <div className="flex items-center gap-2 mb-2">{icon}
