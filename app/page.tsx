@@ -392,18 +392,43 @@ export default function ClosetPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 mb-6 flex-wrap">
-        <FunnelSimple size={14} weight="duotone" color="#6B8F5E" />
-        {TYPE_FILTERS.map((t) => (
-          <button
-            key={t}
-            onClick={() => setFilter(t)}
-            className="px-3 py-1 rounded-sm text-xs font-medium tracking-wider uppercase transition-colors"
-            style={{ background: filter === t ? '#2D5016' : '#EFF3EC', color: filter === t ? '#F9F9F7' : '#6B8F5E' }}
-          >
-            {t}
-          </button>
-        ))}
+      {/* Filter tabs styled as closet divider tabs */}
+      <div className="flex items-end gap-2 mb-0 flex-wrap" style={{ paddingLeft: 2 }}>
+        <FunnelSimple size={14} weight="duotone" color="#6B8F5E" style={{ marginBottom: 10 }} />
+        {TYPE_FILTERS.map((t) => {
+          const active = filter === t;
+          return (
+            <button
+              key={t}
+              onClick={() => setFilter(t)}
+              className="relative flex flex-col items-center transition-all"
+              style={{ paddingBottom: 0 }}
+            >
+              {/* Clip hole */}
+              <div style={{
+                width: 8, height: 8, borderRadius: '50%', marginBottom: 3,
+                background: active ? '#2D5016' : '#C8CCBF',
+                boxShadow: active ? '0 0 0 1.5px #2D5016' : '0 0 0 1.5px #C8CCBF',
+              }} />
+              {/* Label body */}
+              <div style={{
+                padding: '4px 12px 5px',
+                background: active ? '#2D5016' : '#F5F0E8',
+                color: active ? '#F9F9F7' : '#6B8F5E',
+                borderRadius: '4px 4px 2px 2px',
+                fontSize: 10,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                fontWeight: 500,
+                border: `0.5px solid ${active ? '#2D5016' : '#D4C8B0'}`,
+                boxShadow: active ? '0 2px 6px rgba(45,80,22,0.2)' : '0 2px 4px rgba(0,0,0,0.06)',
+                whiteSpace: 'nowrap',
+              }}>
+                {t}
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {filtered.length === 0 && unmatched.length === 0 && enrichingIds.size === 0 ? (
@@ -414,7 +439,19 @@ export default function ClosetPage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
+        <div className="relative">
+          {/* Closet rod */}
+          <div style={{
+            position: 'absolute', top: 0, left: -8, right: -8, height: 10, zIndex: 10,
+            background: 'linear-gradient(180deg, #E8D8B8 0%, #B8966A 30%, #C8A870 60%, #E0CCA0 100%)',
+            borderRadius: 5,
+            boxShadow: '0 3px 10px rgba(0,0,0,0.22), 0 1px 0 rgba(255,255,255,0.35) inset',
+          }} />
+          {/* End caps */}
+          <div style={{ position: 'absolute', top: -2, left: -14, width: 14, height: 14, borderRadius: '50%', background: 'linear-gradient(135deg, #D4AA70, #8B6840)', zIndex: 11, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+          <div style={{ position: 'absolute', top: -2, right: -14, width: 14, height: 14, borderRadius: '50%', background: 'linear-gradient(135deg, #D4AA70, #8B6840)', zIndex: 11, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+
+        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', paddingTop: 24 }}>
           {filtered.map((item) => (
             <div key={item.id} className="group">
               <ItemCard
@@ -428,6 +465,7 @@ export default function ClosetPage() {
               />
             </div>
           ))}
+        </div>
         </div>
       )}
 

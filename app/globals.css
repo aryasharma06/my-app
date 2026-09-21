@@ -16,7 +16,10 @@
 }
 
 body {
-  background: #F9F9F7;
+  background-color: #EFE9DF;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(180,165,140,0.07) 3px, rgba(180,165,140,0.07) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(180,165,140,0.07) 3px, rgba(180,165,140,0.07) 4px);
   color: #1A2E1A;
   font-family: 'Inter', sans-serif;
 }
