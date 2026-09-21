@@ -17,7 +17,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'My Closet',
+  title: "Arya's Closet",
   description: 'Your personal virtual wardrobe',
 };
 

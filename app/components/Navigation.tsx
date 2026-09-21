@@ -18,7 +18,7 @@ export default function Navigation() {
         <div className="flex items-center gap-2">
           <CoatHanger size={22} weight="duotone" color="#2D5016" />
           <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 20, fontWeight: 400, color: '#1A2E1A' }}>
-            My Closet
+            Arya's Closet
           </span>
         </div>
         <nav className="flex items-center gap-1">

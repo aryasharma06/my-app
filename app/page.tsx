@@ -322,7 +322,7 @@ export default function ClosetPage() {
             {items.length} pieces
           </p>
           <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 36, fontWeight: 300, color: '#1A2E1A', lineHeight: 1 }}>
-            My Closet
+            Arya's Closet
           </h1>
         </div>
         <div className="flex items-center gap-3">
