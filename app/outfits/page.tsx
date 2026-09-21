@@ -443,7 +443,8 @@ export default function OutfitsPage() {
                     <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
                       {items.map(item => {
                         const isSelected = item.id === anchorItemId;
-                        const hasImg = item.image_path && item.image_path !== '/uploads/placeholder.jpg';
+                        const hasProductImg = !!item.product_image_url;
+                        const hasOriginalImg = item.image_path && item.image_path !== '/uploads/placeholder.jpg';
                         return (
                           <button
                             key={item.id}
@@ -456,7 +457,10 @@ export default function OutfitsPage() {
                             }}
                           >
                             <div className="relative w-full rounded-sm overflow-hidden" style={{ aspectRatio: '3/4', background: '#EFF3EC' }}>
-                              {hasImg ? (
+                              {hasProductImg ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={item.product_image_url!} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', background: '#fff' }} />
+                              ) : hasOriginalImg ? (
                                 <Image src={item.image_path} alt={item.name} fill style={{ objectFit: 'cover' }} sizes="80px" />
                               ) : (
                                 <div className="absolute inset-0 flex items-center justify-center">
