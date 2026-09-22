@@ -219,10 +219,10 @@ function ActivityChart({ days }: { days: CommitDay[] }) {
 
       {/* Bars */}
       <div className="relative" style={{ overflow: 'visible' }}>
-        <div className="flex items-end gap-px" style={{ height: 40 }}>
+        <div className="flex items-end gap-px" style={{ height: 20 }}>
           {days.map((day, i) => {
             const isHovered = hovered === i;
-            const barH = day.count ? Math.max((day.count / max) * 36, 3) : 0;
+            const barH = day.count ? Math.max((day.count / max) * 18, 2) : 0;
             // Clamp tooltip so it doesn't clip at edges
             const isLeft = i < 4;
             const isRight = i > days.length - 5;
