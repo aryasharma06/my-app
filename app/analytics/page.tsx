@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ChartPie, Tag, Sun, Briefcase, X } from '@phosphor-icons/react';
+import { ChartPie, Tag, Sun, Briefcase, X, GitCommit } from '@phosphor-icons/react';
 import Image from 'next/image';
 import { Item } from '../components/ItemCard';
 
@@ -183,14 +183,105 @@ function DrillDownModal({ config, items, onClose }: { config: DrillDownConfig; i
   );
 }
 
+interface CommitDay { date: string; count: number }
+
+function Sparkline({ days }: { days: CommitDay[] }) {
+  const W = 600;
+  const H = 72;
+  const PAD = { top: 10, right: 6, bottom: 24, left: 6 };
+  const innerW = W - PAD.left - PAD.right;
+  const innerH = H - PAD.top - PAD.bottom;
+  const max = Math.max(...days.map(d => d.count), 1);
+  const n = days.length;
+
+  const x = (i: number) => PAD.left + (i / (n - 1)) * innerW;
+  const y = (v: number) => PAD.top + (1 - v / max) * innerH;
+
+  const linePts = days.map((d, i) => `${x(i)},${y(d.count)}`).join(' ');
+  const areaPath = [
+    `M${x(0)},${y(days[0].count)}`,
+    ...days.slice(1).map((d, i) => `L${x(i + 1)},${y(d.count)}`),
+    `L${x(n - 1)},${PAD.top + innerH}`,
+    `L${x(0)},${PAD.top + innerH}`,
+    'Z',
+  ].join(' ');
+
+  const today = new Date().toISOString().slice(0, 10);
+  const totalCommits = days.reduce((s, d) => s + d.count, 0);
+  const activeDays = days.filter(d => d.count > 0).length;
+
+  const fmt = (iso: string) => {
+    const [, m, d] = iso.split('-');
+    return `${parseInt(m)}/${parseInt(d)}`;
+  };
+
+  return (
+    <div className="rounded p-5" style={{ background: '#fff', border: '0.5px solid #D4DDD0' }}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <GitCommit size={16} weight="duotone" color="#6B8F5E" />
+          <span style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6B8F5E', fontWeight: 500 }}>
+            Development activity — last 30 days
+          </span>
+        </div>
+        <div className="flex gap-4">
+          <span style={{ fontSize: 11, color: '#6B8F5E' }}>
+            <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 16, color: '#1A2E1A', fontWeight: 400, marginRight: 4 }}>{totalCommits}</span>
+            commits
+          </span>
+          <span style={{ fontSize: 11, color: '#6B8F5E' }}>
+            <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 16, color: '#1A2E1A', fontWeight: 400, marginRight: 4 }}>{activeDays}</span>
+            active days
+          </span>
+        </div>
+      </div>
+
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 72, display: 'block' }}>
+        <defs>
+          <linearGradient id="sparkfill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#2D5016" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="#2D5016" stopOpacity="0.01" />
+          </linearGradient>
+        </defs>
+
+        {/* Zero baseline */}
+        <line x1={PAD.left} y1={PAD.top + innerH} x2={W - PAD.right} y2={PAD.top + innerH}
+          stroke="#EFF3EC" strokeWidth="1" />
+
+        {/* Filled area */}
+        <path d={areaPath} fill="url(#sparkfill)" />
+
+        {/* Line */}
+        <polyline points={linePts} fill="none" stroke="#2D5016" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+
+        {/* Dots on active days */}
+        {days.map((d, i) => d.count > 0 && (
+          <circle key={d.date} cx={x(i)} cy={y(d.count)} r={d.date === today ? 3.5 : 2.5}
+            fill={d.date === today ? '#2D5016' : '#fff'} stroke="#2D5016" strokeWidth="1.5" />
+        ))}
+
+        {/* Date labels: first, middle, last */}
+        {[0, Math.floor((n - 1) / 2), n - 1].map(i => (
+          <text key={i} x={x(i)} y={H - 4} textAnchor="middle"
+            style={{ fontSize: 9, fill: '#6B8F5E', fontFamily: 'Inter, sans-serif' }}>
+            {fmt(days[i].date)}
+          </text>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
 export default function AnalyticsPage() {
   const [data, setData] = useState<Analytics | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [drillDown, setDrillDown] = useState<DrillDownConfig | null>(null);
+  const [commits, setCommits] = useState<CommitDay[]>([]);
 
   useEffect(() => {
     fetch('/api/analytics').then((r) => r.json()).then(setData);
     fetch('/api/items').then((r) => r.json()).then(setItems);
+    fetch('/api/analytics/commits').then((r) => r.json()).then(setCommits);
   }, []);
 
   if (!data) return (
@@ -256,6 +347,12 @@ export default function AnalyticsPage() {
           />
         ))}
       </div>
+
+      {commits.length > 0 && (
+        <div className="mt-4">
+          <Sparkline days={commits} />
+        </div>
+      )}
     </div>
   );
 }
