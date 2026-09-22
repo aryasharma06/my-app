@@ -183,30 +183,11 @@ function DrillDownModal({ config, items, onClose }: { config: DrillDownConfig; i
   );
 }
 
-interface CommitDay { date: string; count: number }
+interface CommitDay { date: string; count: number; features: string[] }
 
-function Sparkline({ days }: { days: CommitDay[] }) {
-  const W = 600;
-  const H = 72;
-  const PAD = { top: 10, right: 6, bottom: 24, left: 6 };
-  const innerW = W - PAD.left - PAD.right;
-  const innerH = H - PAD.top - PAD.bottom;
+function ActivityChart({ days }: { days: CommitDay[] }) {
+  const [hovered, setHovered] = useState<number | null>(null);
   const max = Math.max(...days.map(d => d.count), 1);
-  const n = days.length;
-
-  const x = (i: number) => PAD.left + (i / (n - 1)) * innerW;
-  const y = (v: number) => PAD.top + (1 - v / max) * innerH;
-
-  const linePts = days.map((d, i) => `${x(i)},${y(d.count)}`).join(' ');
-  const areaPath = [
-    `M${x(0)},${y(days[0].count)}`,
-    ...days.slice(1).map((d, i) => `L${x(i + 1)},${y(d.count)}`),
-    `L${x(n - 1)},${PAD.top + innerH}`,
-    `L${x(0)},${PAD.top + innerH}`,
-    'Z',
-  ].join(' ');
-
-  const today = new Date().toISOString().slice(0, 10);
   const totalCommits = days.reduce((s, d) => s + d.count, 0);
   const activeDays = days.filter(d => d.count > 0).length;
 
@@ -217,7 +198,7 @@ function Sparkline({ days }: { days: CommitDay[] }) {
 
   return (
     <div className="rounded p-5" style={{ background: '#fff', border: '0.5px solid #D4DDD0' }}>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <GitCommit size={16} weight="duotone" color="#6B8F5E" />
           <span style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6B8F5E', fontWeight: 500 }}>
@@ -236,38 +217,75 @@ function Sparkline({ days }: { days: CommitDay[] }) {
         </div>
       </div>
 
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 72, display: 'block' }}>
-        <defs>
-          <linearGradient id="sparkfill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#2D5016" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="#2D5016" stopOpacity="0.01" />
-          </linearGradient>
-        </defs>
+      {/* Bars */}
+      <div className="relative" style={{ overflow: 'visible' }}>
+        <div className="flex items-end gap-px" style={{ height: 80 }}>
+          {days.map((day, i) => {
+            const isHovered = hovered === i;
+            const barH = day.count ? Math.max((day.count / max) * 72, 6) : 0;
+            // Clamp tooltip so it doesn't clip at edges
+            const isLeft = i < 4;
+            const isRight = i > days.length - 5;
+            const tooltipTranslate = isLeft ? '-10%' : isRight ? '-90%' : '-50%';
 
-        {/* Zero baseline */}
-        <line x1={PAD.left} y1={PAD.top + innerH} x2={W - PAD.right} y2={PAD.top + innerH}
-          stroke="#EFF3EC" strokeWidth="1" />
+            return (
+              <div
+                key={day.date}
+                className="relative flex-1 flex flex-col items-center justify-end"
+                style={{ height: '100%', cursor: day.count ? 'pointer' : 'default' }}
+                onMouseEnter={() => day.count && setHovered(i)}
+                onMouseLeave={() => setHovered(null)}
+              >
+                {/* Bar */}
+                <div style={{
+                  width: isHovered ? '80%' : '45%',
+                  height: barH || 2,
+                  background: barH
+                    ? (isHovered ? '#2D5016' : '#6B8F5E')
+                    : '#EFF3EC',
+                  borderRadius: '2px 2px 0 0',
+                  transition: 'width 0.12s ease, background 0.12s ease',
+                }} />
 
-        {/* Filled area */}
-        <path d={areaPath} fill="url(#sparkfill)" />
+                {/* Tooltip */}
+                {isHovered && day.features.length > 0 && (
+                  <div
+                    className="absolute z-30 pointer-events-none"
+                    style={{
+                      bottom: 'calc(100% + 8px)',
+                      left: '50%',
+                      transform: `translateX(${tooltipTranslate})`,
+                      background: '#1A2E1A',
+                      color: '#F9F9F7',
+                      borderRadius: 4,
+                      padding: '8px 12px',
+                      minWidth: 160,
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+                    }}
+                  >
+                    <p style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6B8F5E', marginBottom: 6 }}>
+                      {fmt(day.date)} — {day.count} commit{day.count !== 1 ? 's' : ''}
+                    </p>
+                    {day.features.map(f => (
+                      <p key={f} style={{ fontSize: 12, lineHeight: 1.6 }}>· {f}</p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
 
-        {/* Line */}
-        <polyline points={linePts} fill="none" stroke="#2D5016" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+        {/* Baseline */}
+        <div style={{ height: 1, background: '#EFF3EC', marginTop: 2 }} />
 
-        {/* Dots on active days */}
-        {days.map((d, i) => d.count > 0 && (
-          <circle key={d.date} cx={x(i)} cy={y(d.count)} r={d.date === today ? 3.5 : 2.5}
-            fill={d.date === today ? '#2D5016' : '#fff'} stroke="#2D5016" strokeWidth="1.5" />
-        ))}
-
-        {/* Date labels: first, middle, last */}
-        {[0, Math.floor((n - 1) / 2), n - 1].map(i => (
-          <text key={i} x={x(i)} y={H - 4} textAnchor="middle"
-            style={{ fontSize: 9, fill: '#6B8F5E', fontFamily: 'Inter, sans-serif' }}>
-            {fmt(days[i].date)}
-          </text>
-        ))}
-      </svg>
+        {/* Date labels */}
+        <div className="flex justify-between mt-2">
+          <span style={{ fontSize: 10, color: '#6B8F5E' }}>{fmt(days[0].date)}</span>
+          <span style={{ fontSize: 10, color: '#6B8F5E' }}>{fmt(days[Math.floor(days.length / 2)].date)}</span>
+          <span style={{ fontSize: 10, color: '#6B8F5E' }}>{fmt(days[days.length - 1].date)}</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -350,7 +368,7 @@ export default function AnalyticsPage() {
 
       {commits.length > 0 && (
         <div className="mt-4">
-          <Sparkline days={commits} />
+          <ActivityChart days={commits} />
         </div>
       )}
     </div>
