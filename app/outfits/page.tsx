@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Swatches, Plus, X, Sparkle, Spinner, Check, Image as ImageIcon, ArrowsLeftRight } from '@phosphor-icons/react';
+import { Swatches, Plus, X, Sparkle, Spinner, Check, Image as ImageIcon, ArrowsLeftRight, TrashSimple } from '@phosphor-icons/react';
 import ItemCard, { Item } from '../components/ItemCard';
 import Image from 'next/image';
 
@@ -27,28 +27,45 @@ type AIMode = 'describe' | 'inspire' | 'match';
 
 const ITEM_TYPES = ['shirt', 'sweater', 'bottom', 'dress', 'jumpsuit', 'shoes', 'bag', 'accessory', 'outerwear'];
 
-function OutfitStrip({ outfit }: { outfit: { name: string; items: Item[] } }) {
+function OutfitStrip({ outfit, onDelete }: { outfit: { id: number; name: string; items: Item[] }; onDelete: () => void }) {
   return (
     <div className="rounded overflow-hidden" style={{ border: '0.5px solid #D4DDD0', background: '#fff' }}>
-      <div className="px-5 py-4 flex items-baseline gap-3" style={{ borderBottom: '0.5px solid #D4DDD0' }}>
-        <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 20, color: '#1A2E1A' }}>{outfit.name}</span>
-        <span style={{ fontSize: 11, color: '#6B8F5E', letterSpacing: '0.06em' }}>{outfit.items.length} pieces</span>
+      <div className="px-5 py-4 flex items-baseline justify-between" style={{ borderBottom: '0.5px solid #D4DDD0' }}>
+        <div className="flex items-baseline gap-3">
+          <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 20, color: '#1A2E1A' }}>{outfit.name}</span>
+          <span style={{ fontSize: 11, color: '#6B8F5E', letterSpacing: '0.06em' }}>{outfit.items.length} pieces</span>
+        </div>
+        <button
+          onClick={onDelete}
+          className="p-1.5 rounded-sm opacity-40 hover:opacity-100 transition-opacity"
+          style={{ color: '#C4735A' }}
+          aria-label="Delete outfit"
+        >
+          <TrashSimple size={14} weight="duotone" />
+        </button>
       </div>
       <div className="flex gap-3 p-4 overflow-x-auto">
-        {outfit.items.map((item) => (
-          <div key={item.id} className="flex-shrink-0 w-28">
-            <div className="relative w-28 rounded overflow-hidden" style={{ aspectRatio: '3/4', background: '#EFF3EC' }}>
-              {item.image_path && item.image_path !== '/uploads/placeholder.jpg' ? (
-                <Image src={item.image_path} alt={item.name} fill style={{ objectFit: 'cover' }} sizes="112px" />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Swatches size={28} weight="duotone" color="#6B8F5E" />
-                </div>
-              )}
+        {outfit.items.map((item) => {
+          const hasProductImg = !!item.product_image_url;
+          const hasOrigImg = item.image_path && item.image_path !== '/uploads/placeholder.jpg';
+          return (
+            <div key={item.id} className="flex-shrink-0 w-28">
+              <div className="relative w-28 rounded overflow-hidden" style={{ aspectRatio: '3/4', background: '#EFF3EC' }}>
+                {hasProductImg ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.product_image_url!} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', background: '#fff' }} />
+                ) : hasOrigImg ? (
+                  <Image src={item.image_path} alt={item.name} fill style={{ objectFit: 'cover' }} sizes="112px" />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Swatches size={28} weight="duotone" color="#6B8F5E" />
+                  </div>
+                )}
+              </div>
+              <p className="mt-1.5" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 13, color: '#1A2E1A', lineHeight: 1.3 }}>{item.name}</p>
             </div>
-            <p className="mt-1.5" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 13, color: '#1A2E1A', lineHeight: 1.3 }}>{item.name}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -122,6 +139,11 @@ export default function OutfitsPage() {
 
   function toggleItem(id: number) {
     setSelected((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  }
+
+  async function handleDeleteOutfit(id: number) {
+    await fetch(`/api/outfits/${id}`, { method: 'DELETE' });
+    setOutfits(prev => prev.filter(o => o.id !== id));
   }
 
   async function saveManualOutfit() {
@@ -597,7 +619,7 @@ export default function OutfitsPage() {
       ) : (
         <div className="flex flex-col gap-4">
           {outfits.map((outfit) => (
-            <OutfitStrip key={outfit.id} outfit={outfit} />
+            <OutfitStrip key={outfit.id} outfit={outfit} onDelete={() => handleDeleteOutfit(outfit.id)} />
           ))}
         </div>
       )}
