@@ -219,10 +219,10 @@ function ActivityChart({ days }: { days: CommitDay[] }) {
 
       {/* Bars */}
       <div className="relative" style={{ overflow: 'visible' }}>
-        <div className="flex items-end gap-px" style={{ height: 80 }}>
+        <div className="flex items-end gap-px" style={{ height: 40 }}>
           {days.map((day, i) => {
             const isHovered = hovered === i;
-            const barH = day.count ? Math.max((day.count / max) * 72, 6) : 0;
+            const barH = day.count ? Math.max((day.count / max) * 36, 3) : 0;
             // Clamp tooltip so it doesn't clip at edges
             const isLeft = i < 4;
             const isRight = i > days.length - 5;
@@ -299,7 +299,11 @@ export default function AnalyticsPage() {
   useEffect(() => {
     fetch('/api/analytics').then((r) => r.json()).then(setData);
     fetch('/api/items').then((r) => r.json()).then(setItems);
-    fetch('/api/analytics/commits').then((r) => r.json()).then(setCommits);
+
+    const fetchCommits = () => fetch('/api/analytics/commits').then((r) => r.json()).then(setCommits);
+    fetchCommits();
+    const interval = setInterval(fetchCommits, 24 * 60 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
   if (!data) return (
