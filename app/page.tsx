@@ -11,7 +11,7 @@ import ItemDetailModal from './components/ItemDetailModal';
 
 const TYPE_FILTERS = ['All', 'Favorites', 'shirt', 'sweater', 'bottom', 'dress', 'shoes', 'bag', 'outerwear', 'accessory', 'jumpsuit'];
 
-type SortOption = 'recent' | 'price-high' | 'price-low' | 'brand';
+type SortOption = 'recent' | 'brand';
 type ViewMode = 'grid' | 'color';
 
 const COLOR_CSS: Record<string, string> = {
@@ -321,10 +321,9 @@ export default function ClosetPage() {
     : searchMatched.filter(i => i.type === filter);
   const isUploading = uploadState.phase !== 'idle';
 
-  const sortedFiltered = sort === 'recent' ? filtered
-    : sort === 'price-high' ? [...filtered].sort((a, b) => (b.price_estimate ?? 0) - (a.price_estimate ?? 0))
-    : sort === 'price-low' ? [...filtered].sort((a, b) => (a.price_estimate ?? 0) - (b.price_estimate ?? 0))
-    : [...filtered].sort((a, b) => (a.brand ?? '').localeCompare(b.brand ?? ''));
+  const sortedFiltered = sort === 'brand'
+    ? [...filtered].sort((a, b) => (a.brand ?? '').localeCompare(b.brand ?? ''))
+    : filtered;
 
   return (
     <div>
@@ -445,8 +444,6 @@ export default function ClosetPage() {
             }}
           >
             <option value="recent">Recently added</option>
-            <option value="price-high">Price: high to low</option>
-            <option value="price-low">Price: low to high</option>
             <option value="brand">Brand A-Z</option>
           </select>
           <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B8F5E', fontSize: 9 }}>▼</span>
