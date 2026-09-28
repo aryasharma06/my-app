@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Camera, Spinner, FunnelSimple, Images, UserCircle, CheckCircle, ListBullets, ArrowClockwise, PencilSimple, PlusCircle, MagnifyingGlass, X } from '@phosphor-icons/react';
+import { Camera, Spinner, FunnelSimple, Images, UserCircle, CheckCircle, ListBullets, ArrowClockwise, PencilSimple, PlusCircle, MagnifyingGlass, X, SquaresFour, Palette } from '@phosphor-icons/react';
 import Image from 'next/image';
 import ItemCard, { Item } from './components/ItemCard';
 import LibraryBrowser from './components/LibraryBrowser';
@@ -10,6 +10,43 @@ import ManualAddModal from './components/ManualAddModal';
 import ItemDetailModal from './components/ItemDetailModal';
 
 const TYPE_FILTERS = ['All', 'Favorites', 'shirt', 'sweater', 'bottom', 'dress', 'shoes', 'bag', 'outerwear', 'accessory', 'jumpsuit'];
+
+type SortOption = 'recent' | 'price-high' | 'price-low' | 'brand';
+type ViewMode = 'grid' | 'color';
+
+const COLOR_CSS: Record<string, string> = {
+  black: '#1a1a1a', white: '#f5f5f0', grey: '#9e9e9e', gray: '#9e9e9e',
+  navy: '#1a237e', 'navy blue': '#1a237e', blue: '#1565c0',
+  'light blue': '#64b5f6', 'sky blue': '#87ceeb', red: '#c62828',
+  burgundy: '#880e4f', maroon: '#6d0025', pink: '#f06292',
+  'light pink': '#f8bbd0', green: '#2e7d32', 'dark green': '#1b5e20',
+  olive: '#6b7c3d', 'olive green': '#6b7c3d', sage: '#8d9f7c',
+  'sage green': '#8d9f7c', khaki: '#c8b560', tan: '#d2b48c',
+  beige: '#e8e0cc', cream: '#fffdd0', ivory: '#fffff0',
+  'off white': '#f8f8f0', brown: '#5d4037', 'dark brown': '#3e2723',
+  camel: '#c19a6b', orange: '#e65100', 'burnt orange': '#bf360c',
+  yellow: '#f9a825', mustard: '#e1a024', purple: '#6a1b9a',
+  lavender: '#9575cd', gold: '#c9a84c', silver: '#b0bec5',
+  coral: '#ff7043', terracotta: '#c1440e', rust: '#b7410e',
+  indigo: '#283593', teal: '#00695c', turquoise: '#00897b',
+  mint: '#a5d6a7', 'mint green': '#a5d6a7', charcoal: '#37474f',
+  denim: '#1976d2', 'light grey': '#bdbdbd', 'light gray': '#bdbdbd',
+  'dark grey': '#424242', 'dark gray': '#424242',
+};
+
+function colorToCss(name: string): string {
+  return COLOR_CSS[name.toLowerCase().trim()] ?? name.toLowerCase().trim();
+}
+
+function groupByColor(items: Item[]): [string, Item[]][] {
+  const groups: Record<string, Item[]> = {};
+  for (const item of items) {
+    const key = item.color?.trim().toLowerCase() || 'no color';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(item);
+  }
+  return Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
+}
 
 interface UploadState {
   phase: 'idle' | 'analyzing' | 'found' | 'enriching' | 'done';
@@ -90,6 +127,8 @@ export default function ClosetPage() {
   const [viewingItem, setViewingItem] = useState<Item | null>(null);
   const [showLog, setShowLog] = useState(false);
   const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<SortOption>('recent');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const fileRef = useRef<HTMLInputElement>(null);
   const refFileRef = useRef<HTMLInputElement>(null);
 
@@ -282,6 +321,11 @@ export default function ClosetPage() {
     : searchMatched.filter(i => i.type === filter);
   const isUploading = uploadState.phase !== 'idle';
 
+  const sortedFiltered = sort === 'recent' ? filtered
+    : sort === 'price-high' ? [...filtered].sort((a, b) => (b.price_estimate ?? 0) - (a.price_estimate ?? 0))
+    : sort === 'price-low' ? [...filtered].sort((a, b) => (a.price_estimate ?? 0) - (b.price_estimate ?? 0))
+    : [...filtered].sort((a, b) => (a.brand ?? '').localeCompare(b.brand ?? ''));
+
   return (
     <div>
       {showLibrary && (
@@ -374,7 +418,7 @@ export default function ClosetPage() {
 
       <ProgressBar state={uploadState} />
 
-      <div className="flex items-center gap-2 mb-4" style={{ maxWidth: 360 }}>
+      <div className="flex items-center gap-2 mb-4">
         <div className="flex items-center gap-2 px-3 py-2 rounded-sm flex-1" style={{ background: '#fff', border: '0.5px solid #D4DDD0' }}>
           <MagnifyingGlass size={14} weight="duotone" color="#6B8F5E" />
           <input
@@ -389,6 +433,41 @@ export default function ClosetPage() {
               <X size={13} weight="bold" />
             </button>
           )}
+        </div>
+        <div className="relative">
+          <select
+            value={sort}
+            onChange={e => setSort(e.target.value as SortOption)}
+            style={{
+              background: '#fff', border: '0.5px solid #D4DDD0', borderRadius: 2,
+              color: '#1A2E1A', fontSize: 12, letterSpacing: '0.05em',
+              padding: '8px 28px 8px 12px', outline: 'none', appearance: 'none', cursor: 'pointer',
+            }}
+          >
+            <option value="recent">Recently added</option>
+            <option value="price-high">Price: high to low</option>
+            <option value="price-low">Price: low to high</option>
+            <option value="brand">Brand A-Z</option>
+          </select>
+          <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B8F5E', fontSize: 9 }}>▼</span>
+        </div>
+        <div className="flex rounded-sm overflow-hidden" style={{ border: '0.5px solid #D4DDD0' }}>
+          <button
+            onClick={() => setViewMode('grid')}
+            className="px-3 py-2 transition-colors"
+            title="Grid view"
+            style={{ background: viewMode === 'grid' ? '#EFF3EC' : '#fff', borderRight: '0.5px solid #D4DDD0' }}
+          >
+            <SquaresFour size={14} weight="duotone" color={viewMode === 'grid' ? '#2D5016' : '#6B8F5E'} />
+          </button>
+          <button
+            onClick={() => setViewMode('color')}
+            className="px-3 py-2 transition-colors"
+            title="Color palette view"
+            style={{ background: viewMode === 'color' ? '#EFF3EC' : '#fff' }}
+          >
+            <Palette size={14} weight="duotone" color={viewMode === 'color' ? '#2D5016' : '#6B8F5E'} />
+          </button>
         </div>
       </div>
 
@@ -406,16 +485,46 @@ export default function ClosetPage() {
         ))}
       </div>
 
-      {filtered.length === 0 && unmatched.length === 0 && enrichingIds.size === 0 ? (
+      {sortedFiltered.length === 0 && unmatched.length === 0 && enrichingIds.size === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 gap-4">
           <Camera size={48} weight="duotone" color="#D4DDD0" />
           <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 22, color: '#6B8F5E', fontWeight: 300 }}>
             {items.length === 0 ? 'Upload your first piece to get started' : search ? `No items match "${search}"` : 'No items in this category'}
           </p>
         </div>
+      ) : viewMode === 'color' ? (
+        <div className="flex flex-col gap-10">
+          {groupByColor(sortedFiltered).map(([color, colorItems]) => (
+            <div key={color}>
+              <div className="flex items-center gap-3 mb-3">
+                <div style={{
+                  width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                  background: colorToCss(color), border: '1px solid rgba(0,0,0,0.1)',
+                }} />
+                <span style={{ fontSize: 13, color: '#1A2E1A', textTransform: 'capitalize' }}>{color}</span>
+                <span style={{ fontSize: 11, color: '#D4DDD0' }}>{colorItems.length} piece{colorItems.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
+                {colorItems.map((item) => (
+                  <div key={item.id} className="group">
+                    <ItemCard
+                      item={item}
+                      enriching={enrichingIds.has(item.id)}
+                      onClick={() => setViewingItem(item)}
+                      onDelete={() => handleDelete(item.id)}
+                      onEdit={() => setEditingItem(item)}
+                      onRefresh={() => enrichItem(item.id)}
+                      onToggleFavorite={() => handleToggleFavorite(item.id)}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
-          {filtered.map((item) => (
+          {sortedFiltered.map((item) => (
             <div key={item.id} className="group">
               <ItemCard
                 item={item}
